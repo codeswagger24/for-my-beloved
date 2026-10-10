@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Her, my love</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Quicksand:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one centered column on the lock screen, a two-column card grid (one column on phones) once unlocked. */
+  :root {
+    --bg: #eef4fb;
+    --glow: #d3e4fa;
+    --surface: #ffffff;
+    --ink: #1c2a40;
+    --muted: #66799a;
+    --accent: #2f6fd0;
+    --accent-soft: #e1ecfb;
+    --line: #c2d5ee;
+    --font-display: "Dancing Script", "Segoe Script", "Brush Script MT", cursive;
+    --font-body: "Quicksand", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --paper: #fffdf8;
+    --rule: #cfe0f3;
+    --margin: #e8a3ae;
+    
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1624;
+      --glow: #1a2d4d;
+      --surface: #162133;
+      --ink: #e8f0fb;
+      --muted: #93a9c7;
+      --accent: #7fb0f5;
+      --accent-soft: #1f3350;
+      --line: #2f4a70;
+      color-scheme: dark;
+      --paper: #fffdf8;
+      --rule: #cfe0f3;
+      --margin: #e8a3ae;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1624;
+    --glow: #1a2d4d;
+    --surface: #162133;
+    --ink: #e8f0fb;
+    --muted: #93a9c7;
+    --accent: #7fb0f5;
+    --accent-soft: #1f3350;
+    --line: #2f4a70;
+    color-scheme: dark;
+    --paper: #fffdf8;
+    --rule: #cfe0f3;
+    --margin: #e8a3ae;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 40px;
+    background: radial-gradient(ellipse at 50% 0%, var(--glow), transparent 65%), var(--bg);
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  h1, h2 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; }
+
+  /* Lock screen */
+  .lock {
+    max-width: 320px;
+    margin-inline: auto;
+    padding-block: 8vh 24px;
+    text-align: center;
+  }
+  .lock h1 { font-size: 3rem; line-height: 1.1; color: var(--accent); }
+  .lock .sub { margin: 8px 0 28px; color: var(--muted); font-size: 0.95rem; }
+  .dots { display: flex; justify-content: center; gap: 14px; height: 18px; margin-bottom: 28px; }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    transition: background-color .15s ease, transform .15s ease;
+  }
+  .dot.on { background: var(--accent); transform: scale(1.1); }
+  .dots.shake { animation: shake .4s ease; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(4px); }
+  }
+  .pad { display: grid; grid-template-columns: repeat(3, 64px); justify-content: center; gap: 16px; }
+  .key {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font: 500 1.5rem var(--font-body);
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .key:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .key:active { transform: scale(.94); }
+  .key.util { font-size: 1.05rem; color: var(--muted); background: transparent; border-color: transparent; }
+  .key.util:hover { background: var(--accent-soft); }
+  .key:focus-visible, .card button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .msg { min-height: 1.6em; margin: 22px 0 0; color: var(--muted); font-size: 0.9rem; }
+  .msg.err { color: var(--accent); font-weight: 600; }
+
+  /* Unlocked list */
+  .list { max-width: 860px; margin-inline: auto; padding-block: 4vh 24px; }
+  .list h2 { text-align: center; font-size: clamp(2.4rem, 7vw, 3.6rem); color: var(--accent); margin-bottom: 36px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .card {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .card.open { border-color: var(--accent); box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .card button {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 56px;
+    padding: 12px 18px;
+    border: 0; border-radius: 14px;
+    background: transparent; color: var(--ink);
+    font: 600 1.02rem var(--font-body);
+    text-align: left; cursor: pointer;
+  }
+  .card .label { min-width: 0; }
+  .card .num { color: var(--accent); margin-right: 6px; }
+  .plus { flex: none; font-size: 1.5rem; line-height: 1; color: var(--accent); transition: transform .25s ease; }
+  .card.open .plus { transform: rotate(45deg); }
+  .body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+  .card.open .body { grid-template-rows: 1fr; }
+  .body > div { overflow: hidden; min-height: 0; }
+  .body p {
+    margin: 0;
+    padding: 0 18px 18px;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.3rem;
+    line-height: 1.4;
+  }
+  .sign { margin: 44px 0 0; text-align: center; font-family: var(--font-display); font-size: 1.9rem; color: var(--accent); }
+
+  /* Letter */
+  .letter {
+    --lh: 2.2rem;
+    position: relative;
+    max-width: 640px;
+    margin: 64px auto 0;
+    padding: calc(var(--lh) * 2) clamp(20px, 5vw, 44px) calc(var(--lh) * 2) 4.4rem;
+    background-color: var(--paper);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--lh) - 1px),
+      var(--rule) calc(var(--lh) - 1px),
+      var(--rule) var(--lh)
+    );
+    border-radius: 4px;
+    box-shadow:
+      0 1px 2px rgba(20, 40, 80, .12),
+      5px 5px 0 -1px var(--paper),
+      5px 5px 0 0 var(--line),
+      0 18px 40px -12px rgba(20, 40, 80, .28);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.45rem;
+    line-height: var(--lh);
+    color: #26324a;
+  }
+  .letter::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3.2rem;
+    width: 2px;
+    background: var(--margin);
+    opacity: .6;
+  }
+  .letter p { margin: 0 0 var(--lh); }
+  .letter p:last-child { margin-bottom: 0; text-align: right; color: #2f6fd0; }
+  .letter .w { opacity: 0.12; transition: opacity .25s ease; }
+  .letter-end { height: 35vh; }
+
+  /* Unlock burst */
+  #burst { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+  .lock.rumble { animation: rumble .38s linear; }
+  @keyframes rumble {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-5px, 3px); }
+    20% { transform: translate(6px, -4px); }
+    30% { transform: translate(-7px, -2px); }
+    40% { transform: translate(5px, 5px); }
+    50% { transform: translate(-6px, 2px); }
+    60% { transform: translate(7px, -3px); }
+    70% { transform: translate(-4px, -5px); }
+    80% { transform: translate(5px, 3px); }
+    90% { transform: translate(-3px, 2px); }
+  }
+  .list.enter { animation: listIn .9s ease both; }
+  @keyframes listIn {
+    from { opacity: 0; transform: scale(.97); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Lively touches */
+  .lock, .list { position: relative; z-index: 1; }
+  #petals { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .list h2 {
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, var(--ink)), var(--accent));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 7s linear infinite;
+  }
+  @keyframes shimmer { to { background-position: 200% center; } }
+  .list.enter .card { animation: cardIn .6s ease backwards; animation-delay: calc(var(--i) * 70ms + 450ms); }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(18px) scale(.97); }
+    to { opacity: 1; transform: none; }
+  }
+  .card { position: relative; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 16%, transparent); }
+  .spark { position: absolute; pointer-events: none; color: var(--accent); font-size: 15px; line-height: 1; animation: rise 1s ease-out both; }
+  @keyframes rise {
+    0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--dx), -46px) scale(1.2); }
+  }
+
+  /* Music button */
+  .music-btn {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    color: var(--accent);
+    font: 600 .95rem var(--font-body);
+    cursor: pointer;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 18%, transparent);
+    transition: transform .15s ease, border-color .2s ease;
+  }
+  .music-btn[hidden] { display: none; }
+  .music-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .music-btn[aria-pressed="false"] { color: var(--muted); }
+  .music-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* GIF beside the signature (white background blends into the paper) */
+  .sig-gif { height: 3rem; width: auto; margin: -.5rem .5rem -.5rem 0; vertical-align: middle; mix-blend-mode: multiply; }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .lock h1 { font-size: 2.6rem; }
+    .letter { --lh: 2rem; font-size: 1.3rem; padding-left: 3.2rem; padding-right: 18px; }
+    .letter::before { left: 2.3rem; }
+    .sig-gif { height: 2.6rem; margin: -.3rem .4rem -.3rem 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<main class="lock" id="lock">
+  <h1 id="greeting">Hi, my lovee</h1>
+  <p class="sub" id="prompt">Enter the passcode to open your surprise</p>
+  <div class="dots" id="dots" aria-hidden="true"></div>
+  <div class="pad" id="pad" role="group" aria-label="Passcode keypad"></div>
+  <p class="msg" id="msg" role="status"></p>
+</main>
+
+<main class="list" id="list" hidden>
+  <h2 id="title"></h2>
+  <div class="grid" id="grid"></div>
+  <p class="sign" id="sign"></p>
+    <article class="letter" id="letter" aria-label="A letter for you">
+  </article>
+  <div class="letter-end" aria-hidden="true"></div>
+</main>
+
+<button type="button" class="music-btn" id="musicBtn" aria-pressed="true" hidden>
+  <span aria-hidden="true">&#9834;</span> <span id="musicLabel">Music on</span>
+</button>
+
+<canvas id="petals" aria-hidden="true"></canvas>
+<canvas id="burst" aria-hidden="true"></canvas>
+
+<script>
+  // ---- Edit this block to personalize the page ----
+  var CONFIG = {
+    greeting: "Helu, mellow3703",
+    prompt: "Enter the passcode to open your surprise",
+    passcode: "143",
+    hint: "Hint: It's a number that represents how i feel for u.",
+    title: "10 things that reminds me of u",
+    signoff: "scroll gamay :D",
+    items: [
+      { t: "That one song: you're here that's the thing", m: "This song has a special place in my heart, because despite everything, u are still here :)" },
+      { t: "Color blue", m: "Everytime i see color blue, it makes me feel closer to you even if we are far apart, but you are very very close in my heart" },
+      { t: "Cherry blossoms", m: "Cherry blossoms are very beautiful, and whenever i see one, it reminds me of our little world that we built together." },
+      { t: "Chiikawa", m: "Chiikawa reminds me of you, coz you are doing everything scared and i think that is very brave of you." },
+      { t: "Books", m: "Whenever i see books, it immediately reminds me of how you love books and literature." },
+      { t: "Writing", m: "Whenever you write something, and read it out loud, it makes me feel like im being brought to your world." },
+      { t: "Greenery", m: "I'd like to lay down in a greenery, and just be there with u." },
+      { t: "Gumamela (hibiscus)", m: "I still remember when u told me na u like this specific flower and it is burried deep within in my forgetful mind." },
+      { t: "Ur cute favorite pajama", m: "Everytime i see pajamas, i immediately think of buying it for u :D" },
+      { t: "You", m: "You remind me of no one. You are the only one that matters to me." }
+    ],
+    // Each line is one paragraph. The last one is the signature (shown on the right).
+    letter: [
+      "My love,",
+      "Times like these are inevitable, and I know you have been through a lot. I just want to say that I love you more than the words that come out of my mouth.",
+      "I love who you are when you're tired. I love you when you are quiet. I love you when you don't have anything to say. You make my life a bit easier just by being here with me, and you make the good days feel like something I want to remember forever. Even though my poor memory sometimes gets in the way, that doesn't change how much you mean to me.",
+      "Thank you for being you, for letting me love you. I want to grow with you. I want to understand you deeper, to learn you more every single day. I know love isn't just about the good times, it's about choosing each other through the hard ones too. And I choose you. I'll keep choosing you.",
+      "You're so far away and yet closer to my heart than anyone else. I want to trace myself onto you. To stay with you, to be woven into your days the way you've woven yourself into mine.",
+      "You make the pain of existing worthwhile.",
+      "PS: I still want to share my earphones wit u",
+      "Kurt <3"
+    ]
+  };
+  // -------------------------------------------------
+
+  var entered = "";
+  var dots = document.getElementById("dots");
+  var pad = document.getElementById("pad");
+  var msg = document.getElementById("msg");
+
+  document.getElementById("greeting").textContent = CONFIG.greeting;
+  document.getElementById("prompt").textContent = CONFIG.prompt;
+  document.getElementById("title").textContent = CONFIG.title;
+  document.getElementById("sign").textContent = CONFIG.signoff;
+  msg.textContent = CONFIG.hint || "";
+
+  for (var i = 0; i < CONFIG.passcode.length; i++) {
+    var d = document.createElement("span");
+    d.className = "dot";
+    dots.appendChild(d);
+  }
+
+  var keys = ["1","2","3","4","5","6","7","8","9","clear","0","del"];
+  keys.forEach(function (k) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "key" + (k === "clear" || k === "del" ? " util" : "");
+    b.textContent = k === "clear" ? "Clear" : k === "del" ? "⌫" : k;
+    b.setAttribute("aria-label", k === "clear" ? "Clear" : k === "del" ? "Delete" : k);
+    b.addEventListener("click", function () { press(k); });
+    pad.appendChild(b);
+  });
+
+  function render() {
+    var ds = dots.children;
+    for (var i = 0; i < ds.length; i++) ds[i].classList.toggle("on", i < entered.length);
+  }
+
+  function press(k) {
+    if (unlocking) return;
+    if (k === "clear") entered = "";
+    else if (k === "del") entered = entered.slice(0, -1);
+    else if (entered.length < CONFIG.passcode.length) entered += k;
+    msg.className = "msg";
+    msg.textContent = CONFIG.hint || "";
+    render();
+    if (entered.length === CONFIG.passcode.length) check();
+  }
+
+  function check() {
+    if (entered === CONFIG.passcode) {
+      unlock();
+    } else {
+      dots.classList.remove("shake");
+      void dots.offsetWidth;
+      dots.classList.add("shake");
+      msg.className = "msg err";
+      msg.textContent = "Not quite. Try again" + (CONFIG.hint ? ". " + CONFIG.hint : ".");
+      setTimeout(function () { entered = ""; render(); }, 450);
+    }
+  }
+
+  var unlocking = false;
+
+  function unlock() {
+    unlocking = true;
+    var lock = document.getElementById("lock");
+    var list = document.getElementById("list");
+    function show() {
+      lock.hidden = true;
+      list.hidden = false;
+      list.classList.add("enter");
+      startPetals();
+      if (startMusic()) document.getElementById("musicBtn").hidden = false;
+      window.scrollTo(0, 0);
+      reveal();
+    }
+    if (reduceMotion) { show(); return; }
+    lock.classList.add("rumble");
+    var ac = getAudio();
+    setTimeout(function () { boom(ac); burst(show); }, 380);
+  }
+
+  var BOOM_VOLUME = 0.12;
+  var audioCtx = null;
+
+  function getAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    } catch (e) { return null; }
+  }
+
+  function boom(ac) {
+    if (!ac) return;
+    var now = ac.currentTime;
+    var master = ac.createGain();
+    master.gain.setValueAtTime(BOOM_VOLUME, now);
+    master.connect(ac.destination);
+
+    // crackling noise that fades from bright to dull
+    var len = Math.floor(ac.sampleRate * 1.4);
+    var buf = ac.createBuffer(1, len, ac.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    var noise = ac.createBufferSource();
+    noise.buffer = buf;
+    var lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(2500, now);
+    lp.frequency.exponentialRampToValueAtTime(120, now + 1.2);
+    var ng = ac.createGain();
+    ng.gain.setValueAtTime(1, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+    noise.connect(lp);
+    lp.connect(ng);
+    ng.connect(master);
+    noise.start(now);
+    noise.stop(now + 1.4);
+
+    // deep thump underneath
+    var osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+    var og = ac.createGain();
+    og.gain.setValueAtTime(1, now);
+    og.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    osc.connect(og);
+    og.connect(master);
+    osc.start(now);
+    osc.stop(now + 0.75);
+  }
+
+  var MUSIC_VOLUME = 0.1;
+  var musicOn = false, musicTimer = null, chordTimer = null, musicMaster = null, musicBus = null;
+  var curChord = -1, melIdx = 2;
+  var CHORD_SECONDS = 10;
+
+  // Four warm, bright chords (C, G, A minor, F). Each has a soft chord and notes for the melody.
+  var CHORDS = [
+    { pad: [196.00, 261.63, 329.63, 493.88], mel: [329.63, 392.00, 523.25, 659.25, 783.99, 1046.50] },
+    { pad: [196.00, 246.94, 293.66, 440.00], mel: [293.66, 392.00, 493.88, 587.33, 783.99, 880.00] },
+    { pad: [220.00, 261.63, 329.63, 392.00], mel: [329.63, 440.00, 523.25, 659.25, 783.99, 880.00] },
+    { pad: [174.61, 220.00, 261.63, 329.63], mel: [440.00, 523.25, 659.25, 698.46, 880.00, 1046.50] }
+  ];
+
+  function startMusic() {
+    var ac = getAudio();
+    if (!ac) return false;
+    if (musicOn) return true;
+    musicOn = true;
+
+    musicMaster = ac.createGain();
+    musicMaster.gain.setValueAtTime(0, ac.currentTime);
+    musicMaster.gain.linearRampToValueAtTime(MUSIC_VOLUME, ac.currentTime + 6);
+    musicMaster.connect(ac.destination);
+
+    // gentle reverb
+    var ir = ac.createBuffer(2, Math.floor(ac.sampleRate * 3), ac.sampleRate);
+    for (var c = 0; c < 2; c++) {
+      var d = ir.getChannelData(c);
+      for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+    }
+    var verb = ac.createConvolver();
+    verb.buffer = ir;
+    var wet = ac.createGain();
+    wet.gain.value = 0.5;
+    verb.connect(wet);
+    wet.connect(musicMaster);
+
+    musicBus = ac.createGain();
+    musicBus.connect(musicMaster);
+    musicBus.connect(verb);
+
+    chordStep();
+    musicStep();
+    return true;
+  }
+
+  function playNote(ac, f, when, dur, vol) {
+    var o1 = ac.createOscillator();
+    var o2 = ac.createOscillator();
+    var o3 = ac.createOscillator();
+    o1.type = "triangle";
+    o2.type = "sine";
+    o3.type = "sine";
+    o1.frequency.value = f;
+    o2.frequency.value = f * 2;
+    o3.frequency.value = f;
+    o3.detune.value = 5;
+    var g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(vol, when + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    var g2 = ac.createGain();
+    g2.gain.value = 0.15;
+    var g3 = ac.createGain();
+    g3.gain.value = 0.5;
+    var lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 1300;
+    o1.connect(g);
+    o2.connect(g2);
+    o3.connect(g3);
+    g2.connect(g);
+    g3.connect(g);
+    g.connect(lp);
+    lp.connect(musicBus);
+    [o1, o2, o3].forEach(function (o) { o.start(when); o.stop(when + dur + 0.1); });
+  }
+
+  function playPad(ac, chord, when) {
+    chord.pad.forEach(function (f) {
+      var o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.exponentialRampToValueAtTime(0.03, when + 3.5);
+      g.gain.setValueAtTime(0.03, when + 7);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + 12);
+      o.connect(g);
+      g.connect(musicBus);
+      o.start(when);
+      o.stop(when + 12.2);
+    });
+  }
+
+  function chordStep() {
+    var ac = audioCtx;
+    if (!ac || !musicOn) return;
+    curChord = (curChord + 1) % CHORDS.length;
+    playPad(ac, CHORDS[curChord], ac.currentTime + 0.05);
+    chordTimer = setTimeout(chordStep, CHORD_SECONDS * 1000);
+  }
+
+  function musicStep() {
+    var ac = audioCtx;
+    if (!ac || !musicOn) return;
+    var chord = CHORDS[Math.max(0, curChord)];
+    var now = ac.currentTime + 0.05;
+    var moves = [-2, -1, -1, 1, 1, 2];
+    melIdx = Math.max(0, Math.min(chord.mel.length - 1, melIdx + moves[Math.floor(Math.random() * moves.length)]));
+    playNote(ac, chord.mel[melIdx], now, 5, 0.12);
+    if (Math.random() < 0.3) {
+      playNote(ac, chord.mel[Math.max(0, melIdx - 2)], now + 0.7 + Math.random() * 0.5, 4.5, 0.09);
+    }
+    musicTimer = setTimeout(musicStep, 2500 + Math.random() * 2500);
+  }
+
+  function setMusic(on) {
+    var ac = audioCtx;
+    if (!ac || !musicMaster) return;
+    var t = ac.currentTime;
+    musicMaster.gain.cancelScheduledValues(t);
+    musicMaster.gain.setValueAtTime(musicMaster.gain.value, t);
+    musicMaster.gain.linearRampToValueAtTime(on ? MUSIC_VOLUME : 0, t + 0.8);
+    clearTimeout(musicTimer);
+    clearTimeout(chordTimer);
+    if (on) {
+      if (ac.state === "suspended") ac.resume();
+      chordStep();
+      musicStep();
+    }
+  }
+
+  document.getElementById("musicBtn").addEventListener("click", function () {
+    var on = this.getAttribute("aria-pressed") !== "true";
+    this.setAttribute("aria-pressed", on ? "true" : "false");
+    document.getElementById("musicLabel").textContent = on ? "Music on" : "Music off";
+    setMusic(on);
+  });
+
+  var petalsOn = false;
+
+  function startPetals() {
+    if (reduceMotion || petalsOn) return;
+    petalsOn = true;
+    var cv = document.getElementById("petals");
+    var ctx = cv.getContext("2d");
+    var dpr = window.devicePixelRatio || 1;
+    var W = 0, H = 0;
+    function size() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      cv.width = Math.round(W * dpr);
+      cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    size();
+    window.addEventListener("resize", size);
+
+    var cs = getComputedStyle(document.documentElement);
+    var accent = cs.getPropertyValue("--accent").trim() || "#2f6fd0";
+    var soft = cs.getPropertyValue("--accent-soft").trim() || "#e1ecfb";
+    var colors = [accent, accent, soft, "#ffffff"];
+
+    function make(initial) {
+      return {
+        x: Math.random() * W,
+        y: initial ? Math.random() * H : -20,
+        r: 5 + Math.random() * 7,
+        vy: 22 + Math.random() * 30,
+        sway: 20 + Math.random() * 30,
+        ph: Math.random() * 6.28,
+        sp: 0.6 + Math.random() * 0.8,
+        rot: Math.random() * 6.28,
+        vr: (Math.random() - 0.5) * 1.2,
+        a: 0.25 + Math.random() * 0.4,
+        c: colors[Math.floor(Math.random() * colors.length)]
+      };
+    }
+    var petals = [];
+    for (var i = 0; i < 30; i++) petals.push(make(true));
+
+    var last = performance.now();
+    function frame(now) {
+      var dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      ctx.clearRect(0, 0, W, H);
+      petals.forEach(function (p, idx) {
+        p.y += p.vy * dt;
+        p.ph += p.sp * dt;
+        p.rot += p.vr * dt;
+        if (p.y > H + 20) { petals[idx] = p = make(false); }
+        ctx.save();
+        ctx.translate(p.x + Math.sin(p.ph) * p.sway, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = p.a;
+        ctx.fillStyle = p.c;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function sparkle(card) {
+    if (reduceMotion) return;
+    for (var n = 0; n < 7; n++) {
+      var sp = document.createElement("span");
+      sp.className = "spark";
+      sp.textContent = n % 2 ? "\u2726" : "\u2665\uFE0E";
+      sp.style.right = (14 + Math.random() * 40) + "px";
+      sp.style.top = (10 + Math.random() * 20) + "px";
+      sp.style.setProperty("--dx", (Math.random() * 60 - 30) + "px");
+      sp.style.animationDelay = (n * 40) + "ms";
+      sp.addEventListener("animationend", function () { this.remove(); });
+      card.appendChild(sp);
+    }
+  }
+
+  function burst(onCover) {
+    var cv = document.getElementById("burst");
+    var ctx = cv.getContext("2d");
+    var dpr = window.devicePixelRatio || 1;
+    var W = window.innerWidth, H = window.innerHeight;
+    cv.width = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var cs = getComputedStyle(document.documentElement);
+    var colors = ["--accent", "--accent-soft", "--glow"]
+      .map(function (n) { return cs.getPropertyValue(n).trim(); })
+      .filter(Boolean);
+    colors.push("#ffffff");
+
+    var BLOCK = 8, cx = W / 2, cy = H * 0.42, parts = [];
+    for (var i = 0; i < 260; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = 120 + Math.random() * Math.max(W, H) * 0.9;
+      parts.push({
+        x: cx, y: cy,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        size: BLOCK * (1 + Math.floor(Math.random() * 5)),
+        life: 0.9 + Math.random() * 0.9,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+
+    var start = null, last = 0, covered = false;
+    function frame(ts) {
+      if (start === null) { start = ts; last = ts; }
+      var t = ts - start;
+      var dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      ctx.clearRect(0, 0, W, H);
+
+      var f = t < 140 ? t / 140 : t < 700 ? 1 - (t - 140) / 560 : 0;
+      if (f > 0) {
+        ctx.fillStyle = "rgba(255,255,255," + f.toFixed(3) + ")";
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      var age = t / 1000;
+      parts.forEach(function (p) {
+        if (age > p.life) return;
+        var drag = Math.max(0, 1 - 2.2 * dt);
+        p.vx *= drag;
+        p.vy = p.vy * drag + 300 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        var k = 1 - age / p.life;
+        var s = Math.max(BLOCK, Math.round((p.size * k) / BLOCK) * BLOCK);
+        ctx.globalAlpha = Math.min(1, k * 1.6);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.round(p.x / BLOCK) * BLOCK, Math.round(p.y / BLOCK) * BLOCK, s, s);
+      });
+      ctx.globalAlpha = 1;
+
+      if (!covered && t >= 140) { covered = true; onCover(); }
+      if (t < 1900) requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, W, H);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (document.getElementById("lock").hidden) return;
+    if (/^[0-9]$/.test(e.key)) press(e.key);
+    else if (e.key === "Backspace") press("del");
+    else if (e.key === "Escape") press("clear");
+  });
+
+  var grid = document.getElementById("grid");
+  CONFIG.items.forEach(function (it, i) {
+    var card = document.createElement("div");
+    card.className = "card";
+    card.style.setProperty("--i", i);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "q" + i;
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", "a" + i);
+    var label = document.createElement("span");
+    label.className = "label";
+    var num = document.createElement("span");
+    num.className = "num";
+    num.textContent = (i + 1) + ".";
+    label.appendChild(num);
+    label.appendChild(document.createTextNode(it.t));
+    var plus = document.createElement("span");
+    plus.className = "plus";
+    plus.setAttribute("aria-hidden", "true");
+    plus.textContent = "+";
+    btn.appendChild(label);
+    btn.appendChild(plus);
+    var body = document.createElement("div");
+    body.className = "body";
+    body.id = "a" + i;
+    body.setAttribute("role", "region");
+    body.setAttribute("aria-labelledby", "q" + i);
+    var inner = document.createElement("div");
+    var p = document.createElement("p");
+    p.textContent = it.m;
+    inner.appendChild(p);
+    body.appendChild(inner);
+    btn.addEventListener("click", function () {
+      var open = card.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) sparkle(card);
+    });
+    card.appendChild(btn);
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+
+  // Letter: words fade in as she scrolls
+  var letterEl = document.getElementById("letter");
+  var words = [];
+  CONFIG.letter.forEach(function (para, idx) {
+    var p = document.createElement("p");
+    if (idx === CONFIG.letter.length - 1) {
+      var gif = document.createElement("img");
+      gif.className = "sig-gif w";
+      gif.src = "gif-left.gif";
+      gif.alt = "";
+      gif.addEventListener("error", function () { this.remove(); });
+      p.appendChild(gif);
+      words.push(gif);
+    }
+    var parts = para.split(" ");
+    parts.forEach(function (w, i) {
+      var s = document.createElement("span");
+      s.className = "w";
+      s.textContent = w;
+      p.appendChild(s);
+      words.push(s);
+      if (i < parts.length - 1) p.appendChild(document.createTextNode(" "));
+    });
+    letterEl.appendChild(p);
+  });
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var ticking = false;
+
+  function reveal() {
+    ticking = false;
+    var vh = window.innerHeight;
+    var start = vh * 0.92;
+    var end = vh * 0.6;
+    for (var i = 0; i < words.length; i++) {
+      var top = words[i].getBoundingClientRect().top;
+      var t = reduceMotion ? 1 : Math.min(1, Math.max(0, (start - top) / (start - end)));
+      words[i].style.opacity = (0.12 + 0.88 * t).toFixed(2);
+    }
+  }
+
+  function queueReveal() {
+    if (!ticking) { ticking = true; requestAnimationFrame(reveal); }
+  }
+  window.addEventListener("scroll", queueReveal, { passive: true });
+  window.addEventListener("resize", queueReveal);
+</script>
+
+</html>
